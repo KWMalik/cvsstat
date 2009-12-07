@@ -1,0 +1,4 @@
+cvsstat
+-------
+
+* A program to compute the code churn in the CVS projects based on date range
