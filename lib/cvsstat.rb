@@ -19,6 +19,10 @@ puts File.exist?('logfile.log')
 
 filedata_map = {}
 
+start_date = Date.parse("2009-10-01")
+end_date = Date.parse("2009-12-07")
+
+
 File.open('logfile.log') do |file|
     puts file
     
@@ -30,7 +34,7 @@ File.open('logfile.log') do |file|
       
       if usenext
           #puts line
-          puts '+'
+          #puts '+'
           
           parts = line.strip.split(';')
           
@@ -39,25 +43,30 @@ File.open('logfile.log') do |file|
           #puts "'#{date_string}'"
           #puts Date.parse(date_string)
           
-          filename = parts[parts.size - 1].split(':')[1]
-          filedata = Filedata.new(filename)
-          filedata_map[filename] = filedata
+          revision_date = Date.parse(date_string)
           
-          line_parts = parts.select do |item| 
-          #  puts item
-            (item =~ /^ *lines*/)  != nil
+          if (revision_date >= start_date and revision_date <= end_date)
+            filename = parts[parts.size - 1].split(':')[1]
+            filedata = Filedata.new(filename)
+            filedata_map[filename] = filedata
+
+            line_parts = parts.select do |item| 
+            #  puts item
+              (item =~ /^ *lines*/)  != nil
+            end
+
+            if (line_parts.size > 0) 
+              lines_string = line_parts[0]
+             # puts lines_string
+
+              filedata.lines_added = Integer(lines_string.scan(/\+(.*) /)[0][0])
+              filedata.lines_removed = Integer(lines_string.scan(/-.*/)[0])
+            end
+
+
+            #puts filedata
+
           end
-          
-          if (line_parts.size > 0) 
-            lines_string = line_parts[0]
-           # puts lines_string
-            
-            filedata.lines_added = Integer(lines_string.scan(/\+(.*) /)[0][0])
-            filedata.lines_removed = Integer(lines_string.scan(/-.*/)[0])
-          end
-          
-          
-          #puts filedata
           
             
       end
@@ -72,4 +81,12 @@ File.open('logfile.log') do |file|
     end
   end
   
-  puts filedata_map.size
+  puts "Files found with revision: #{filedata_map.size}"
+  
+  f = File.new("output.csv","w")
+  
+  f.puts "filename,added,removed,churn"
+  filedata_map.each do |key,value|
+    f.puts "'#{key.strip}','#{value.lines_added}','#{value.lines_removed}',''#{value.churn}'"
+  end
+  f.close
