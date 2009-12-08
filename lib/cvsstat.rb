@@ -19,7 +19,7 @@ puts File.exist?('logfile.log')
 
 filedata_map = {}
 
-start_date = Date.parse("2009-10-01")
+start_date = Date.parse("2009-11-06")
 end_date = Date.parse("2009-12-07")
 
 
@@ -46,10 +46,10 @@ File.open('logfile.log') do |file|
           revision_date = Date.parse(date_string)
           
           if (revision_date >= start_date and revision_date <= end_date)
-            filename = parts[parts.size - 1].split(':')[1]
-            filedata = Filedata.new(filename)
-            filedata_map[filename] = filedata
-
+            filename = parts[parts.size - 1].split(':')[1].strip
+            
+            
+            filedata = filedata_map[filename]  || Filedata.new(filename)
             line_parts = parts.select do |item| 
             #  puts item
               (item =~ /^ *lines*/)  != nil
@@ -58,14 +58,11 @@ File.open('logfile.log') do |file|
             if (line_parts.size > 0) 
               lines_string = line_parts[0]
              # puts lines_string
-
-              filedata.lines_added = Integer(lines_string.scan(/\+(.*) /)[0][0])
-              filedata.lines_removed = Integer(lines_string.scan(/-.*/)[0])
+              filedata.lines_added += Integer(lines_string.scan(/\+(.*) /)[0][0])
+              filedata.lines_removed += Integer(lines_string.scan(/-(.*)/)[0][0])
             end
 
-
-            #puts filedata
-
+            filedata_map[filename]  = filedata
           end
           
             
@@ -83,10 +80,10 @@ File.open('logfile.log') do |file|
   
   puts "Files found with revision: #{filedata_map.size}"
   
-  f = File.new("output.csv","w")
+  f = File.new("output #{start_date} - #{end_date}.csv","w")
   
   f.puts "filename,added,removed,churn"
   filedata_map.each do |key,value|
-    f.puts "'#{key.strip}','#{value.lines_added}','#{value.lines_removed}',''#{value.churn}'"
+    f.puts "#{key.strip},#{value.lines_added},#{value.lines_removed},#{value.churn}"
   end
   f.close
